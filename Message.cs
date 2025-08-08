@@ -1,5 +1,7 @@
 using Newtonsoft.Json.Linq;
 
+namespace ChatCompletionSharp;
+
 public class Message
 {
     public required string Role { get; set; }

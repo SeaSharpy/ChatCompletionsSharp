@@ -1,5 +1,5 @@
 using Newtonsoft.Json.Linq;
-
+namespace ChatCompletionSharp;
 public class CompletionRequest
 {
     public Message[] Messages { get; set; }
