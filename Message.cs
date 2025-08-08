@@ -1,6 +1,6 @@
 using Newtonsoft.Json.Linq;
 
-namespace ChatCompletionSharp;
+namespace ChatCompletionsSharp;
 
 public class Message
 {

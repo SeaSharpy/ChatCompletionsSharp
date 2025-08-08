@@ -4,7 +4,7 @@ using NJsonSchema;
 using NJsonSchema.Generation;
 using NJsonSchema.NewtonsoftJson.Generation;
 
-namespace ChatCompletionSharp;
+namespace ChatCompletionsSharp;
 
 file static class SchemaHelper
 {
