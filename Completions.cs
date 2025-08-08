@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 namespace ChatCompletionsSharp;
 public class CompletionRequest
 {
-    public Message[] Messages { get; set; }
+    public List<Message> Messages { get; set; } = new();
     public string Model { get; set; }
     public float Temperature { get; set; } = 1.0f;
     public int MaxTokens { get; set; } = -1;
@@ -12,7 +12,7 @@ public class CompletionRequest
     public string? Verbosity { get; set; }
     public ICompletionEventCallbacks Callbacks { get; set; }
 
-    public CompletionRequest(Message[] messages, string model, ICompletionEventCallbacks callbacks)
+    public CompletionRequest(List<Message> messages, string model, ICompletionEventCallbacks callbacks)
     {
         Messages = messages;
         Model = model;

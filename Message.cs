@@ -9,6 +9,8 @@ public class Message
     public ToolCall[]? ToolCalls { get; set; }
     public string? ToolCallId { get; set; }
 
+    public string? Name { get; set; }
+
     public static Message User(string content)
     {
         return new Message
@@ -72,6 +74,7 @@ public class Message
                 .ToArray();
         }
         message.ToolCallId = json["tool_call_id"]?.ToString();
+        message.Name = json["name"]?.ToString();
         return message;
     }
 
@@ -81,7 +84,7 @@ public class Message
             ? $"[{string.Join(", ", ToolCalls.Select(t => t.ToString()))}]"
             : "null";
 
-        return $"Role: {Role}, Content: {Content}, ToolCalls: {toolCallsStr}, ToolCallId: {ToolCallId}";
+        return $"Role: {Role}, Name: {Name}, Content: {Content}, ToolCalls: {toolCallsStr}, ToolCallId: {ToolCallId}";
     }
 
     internal JObject ToJson()
@@ -97,6 +100,9 @@ public class Message
 
         if (ToolCallId != null)
             data["tool_call_id"] = ToolCallId;
+        
+        if (Name != null)
+            data["name"] = Name;
 
         return data;
     }

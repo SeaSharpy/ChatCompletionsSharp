@@ -60,13 +60,13 @@ public class OpenAI
                 }
                 Message message = Message.FromJson(messageToken);
                 callbacks.OnCompletionDelta(request, message);
-                request.Messages.Append(message);
+                request.Messages.Add(message);
                 if (message.ToolCalls != null)
                 {
                     foreach (ToolCall toolCall in message.ToolCalls)
                     {
                         Message toolResponse = callbacks.OnTool(request, toolCall);
-                        request.Messages.Append(toolResponse);
+                        request.Messages.Add(toolResponse);
                     }
                 }
                 else break;
