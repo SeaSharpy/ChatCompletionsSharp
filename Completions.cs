@@ -1,6 +1,7 @@
 using Newtonsoft.Json.Linq;
 
 namespace ChatCompletionsSharp;
+
 public class CompletionRequest
 {
     public List<Message> Messages { get; set; } = new();
@@ -24,7 +25,7 @@ public class CompletionRequest
         var data = new JObject
         {
             ["model"] = Model,
-            ["messages"] = new JArray(Messages.Select(m => m.ToJson())),
+            ["messages"] = new JArray(Messages.Select(m => { Console.WriteLine(m); return m.ToJson(); })),
             ["temperature"] = Temperature,
             ["max_completion_tokens"] = MaxTokens < 0 ? null : MaxTokens,
             ["n"] = 1,
@@ -48,7 +49,7 @@ public interface ICompletionEventCallbacks
     void OnCompletionStarted(CompletionRequest r);
     Message OnTool(CompletionRequest r, ToolCall toolCall);
     void OnCompletionDelta(CompletionRequest r, Message delta);
-    void OnCompletionEnded(CompletionRequest r);
+    void OnCompletionEnded(CompletionRequest r, List<Message> newMessages);
     void OnCompletionError(CompletionRequest r, Exception e);
     void OnCompletionError(CompletionRequest r, string e);
 }

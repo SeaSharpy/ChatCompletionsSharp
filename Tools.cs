@@ -12,7 +12,7 @@ file static class SchemaHelper
     {
         var settings = new NewtonsoftJsonSchemaGeneratorSettings
         {
-            DefaultReferenceTypeNullHandling = ReferenceTypeNullHandling.NotNull
+            DefaultReferenceTypeNullHandling = ReferenceTypeNullHandling.NotNull,
         };
 
         var schema = JsonSchemaGenerator.FromType(type, settings);
@@ -119,7 +119,7 @@ public class ToolCall
             ["function"] = new JObject
             {
                 ["name"] = Name,
-                ["arguments"] = JObject.FromObject(Arguments)
+                ["arguments"] = JObject.FromObject(Arguments).ToString()
             }
         };
     }

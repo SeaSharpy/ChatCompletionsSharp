@@ -100,7 +100,7 @@ public class Message
 
         if (ToolCallId != null)
             data["tool_call_id"] = ToolCallId;
-        
+
         if (Name != null)
             data["name"] = Name;
 

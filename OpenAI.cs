@@ -18,6 +18,7 @@ public class OpenAI
     {
         ICompletionEventCallbacks callbacks = request.Callbacks;
         Exception? error = null;
+        List<Message> extraMessages = new();
         try
         {
             using var client = new HttpClient();
@@ -61,12 +62,14 @@ public class OpenAI
                 Message message = Message.FromJson(messageToken);
                 callbacks.OnCompletionDelta(request, message);
                 request.Messages.Add(message);
+                extraMessages.Add(message);
                 if (message.ToolCalls != null)
                 {
                     foreach (ToolCall toolCall in message.ToolCalls)
                     {
                         Message toolResponse = callbacks.OnTool(request, toolCall);
                         request.Messages.Add(toolResponse);
+                        extraMessages.Add(toolResponse);
                     }
                 }
                 else break;
@@ -105,7 +108,7 @@ public class OpenAI
             {
                 callbacks.OnCompletionError(request, error);
             }
-            callbacks.OnCompletionEnded(request);
+            callbacks.OnCompletionEnded(request, extraMessages);
         }
     }
 }
