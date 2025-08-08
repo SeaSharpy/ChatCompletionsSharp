@@ -1,0 +1,52 @@
+using Newtonsoft.Json.Linq;
+
+public class CompletionRequest
+{
+    public Message[] Messages { get; set; }
+    public string Model { get; set; }
+    public float Temperature { get; set; } = 1.0f;
+    public int MaxTokens { get; set; } = -1;
+    public string? Prediction { get; set; }
+    public string? ReasoningEffort { get; set; }
+    public string? Verbosity { get; set; }
+    public ICompletionEventCallbacks Callbacks { get; set; }
+
+    public CompletionRequest(Message[] messages, string model, ICompletionEventCallbacks callbacks)
+    {
+        Messages = messages;
+        Model = model;
+        Callbacks = callbacks;
+    }
+
+    internal JObject ToJson()
+    {
+        var data = new JObject
+        {
+            ["model"] = Model,
+            ["messages"] = new JArray(Messages.Select(m => m.ToJson())),
+            ["temperature"] = Temperature,
+            ["max_completion_tokens"] = MaxTokens,
+            ["n"] = 1,
+            ["stream"] = false,
+            ["tools"] = Tool.AllAsJson()
+        };
+
+        if (Prediction != null)
+            data["prediction"] = Prediction;
+        if (ReasoningEffort != null)
+            data["reasoning_effort"] = ReasoningEffort;
+        if (Verbosity != null)
+            data["verbosity"] = Verbosity;
+
+        return data;
+    }
+}
+
+public interface ICompletionEventCallbacks
+{
+    void OnCompletionStarted(CompletionRequest r);
+    Message OnTool(CompletionRequest r, ToolCall toolCall);
+    void OnCompletionEnded(CompletionRequest r);
+    void OnCompletionError(CompletionRequest r, Exception e);
+    void OnCompletionError(CompletionRequest r, string e);
+}

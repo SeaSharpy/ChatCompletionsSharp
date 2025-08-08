@@ -1,0 +1,82 @@
+## Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.pdb
+*.cache
+*.ilk
+*.log
+*.tlog
+
+## VS Code and Rider
+.vscode/
+.idea/
+
+## Rider
+*.sln.iml
+
+## VS generated files
+*.dbmdl
+*.bak
+*.backup
+*.orig
+
+## NuGet
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## ASP.NET / Web projects
+App_Data/
+App_Browsers/
+App_WebReferences/
+App_Start/
+App_LocalResources/
+App_GlobalResources/
+Generated_Code/
+
+## Entity Framework
+Migrations/
+
+## dotCover
+.idea/
+*.dotCover
+
+## Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+## StyleCop
+StyleCopReport.xml
+
+## NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+
+## User-specific files
+*.suo
+*.user
+*.userprefs
+
+## Crash reports
+*.stackdump
+
+## OS-specific
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+## JetBrains
+.idea/
+
+## Rider
+.idea/
