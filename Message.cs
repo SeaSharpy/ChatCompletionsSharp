@@ -56,6 +56,34 @@ public class Message
         };
     }
 
+    public static Message FromJson(JToken json)
+    {
+        var message = new Message
+        {
+            Role = json["role"]?.ToString()
+                ?? throw new ArgumentNullException("Message must have a role."),
+            Content = json["content"]?.ToString()
+                ?? throw new ArgumentNullException("Message must have a content.")
+        };
+        if (json["tool_calls"] is JArray toolCallsArray)
+        {
+            message.ToolCalls = toolCallsArray
+                .Select(t => ToolCall.FromJson(t))
+                .ToArray();
+        }
+        message.ToolCallId = json["tool_call_id"]?.ToString();
+        return message;
+    }
+
+    public override string ToString()
+    {
+        var toolCallsStr = ToolCalls != null
+            ? $"[{string.Join(", ", ToolCalls.Select(t => t.ToString()))}]"
+            : "null";
+
+        return $"Role: {Role}, Content: {Content}, ToolCalls: {toolCallsStr}, ToolCallId: {ToolCallId}";
+    }
+
     internal JObject ToJson()
     {
         var data = new JObject

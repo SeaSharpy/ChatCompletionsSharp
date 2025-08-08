@@ -26,7 +26,7 @@ public class CompletionRequest
             ["model"] = Model,
             ["messages"] = new JArray(Messages.Select(m => m.ToJson())),
             ["temperature"] = Temperature,
-            ["max_completion_tokens"] = MaxTokens,
+            ["max_completion_tokens"] = MaxTokens < 0 ? null : MaxTokens,
             ["n"] = 1,
             ["stream"] = false,
             ["tools"] = Tool.AllAsJson()
@@ -47,6 +47,7 @@ public interface ICompletionEventCallbacks
 {
     void OnCompletionStarted(CompletionRequest r);
     Message OnTool(CompletionRequest r, ToolCall toolCall);
+    void OnCompletionDelta(CompletionRequest r, Message delta);
     void OnCompletionEnded(CompletionRequest r);
     void OnCompletionError(CompletionRequest r, Exception e);
     void OnCompletionError(CompletionRequest r, string e);

@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace ChatCompletionsSharp;
 
@@ -14,27 +16,96 @@ public class OpenAI
 
     public async Task SendCompletion(CompletionRequest request)
     {
+        ICompletionEventCallbacks callbacks = request.Callbacks;
+        Exception? error = null;
         try
         {
             using var client = new HttpClient();
 
-            // Add headers
             client.DefaultRequestHeaders.Add("Authorization", "Bearer " + ApiKey);
 
-            // Convert JObject to StringContent
-            var content = new StringContent(request.ToJson().ToString(), Encoding.UTF8, "application/json");
+            callbacks.OnCompletionStarted(request);
 
-            // Send POST request
-            var response = await client.PostAsync(BaseUrl, content);
-            response.EnsureSuccessStatusCode();
+            while (true)
+            {
 
-            // Optionally read response
-            string responseBody = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Response: {responseBody}");
+                var content = new StringContent(request.ToJson().ToString(), Encoding.UTF8, "application/json");
+
+                var response = await client.PostAsync(BaseUrl, content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    string errorBody = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"HTTP error {(int)response.StatusCode} {response.ReasonPhrase}");
+                    Console.WriteLine($"Error body: {errorBody}");
+                    callbacks.OnCompletionError(request, errorBody);
+                    goto EndTry;
+                }
+
+                JObject responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
+                JToken? choices = responseBody["choices"];
+                choices = choices?[0];
+                if (choices == null)
+                {
+                    Console.WriteLine("No choices found in response");
+                    callbacks.OnCompletionError(request, "No choices found in response");
+                    goto EndTry;
+                }
+                JToken? messageToken = choices["message"];
+                if (messageToken == null)
+                {
+                    Console.WriteLine("No message found in response");
+                    callbacks.OnCompletionError(request, "No message found in response");
+                    goto EndTry;
+                }
+                Message message = Message.FromJson(messageToken);
+                callbacks.OnCompletionDelta(request, message);
+                request.Messages.Append(message);
+                if (message.ToolCalls != null)
+                {
+                    foreach (ToolCall toolCall in message.ToolCalls)
+                    {
+                        Message toolResponse = callbacks.OnTool(request, toolCall);
+                        request.Messages.Append(toolResponse);
+                    }
+                }
+                else break;
+            }
+
+        EndTry:;
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"HTTP request exception: {ex.Message}");
+            error = ex;
+        }
+        catch (UriFormatException ex)
+        {
+            Console.WriteLine($"URL formatting error: {ex.Message}");
+            error = ex;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Invalid operation: {ex.Message}");
+            error = ex;
+        }
+        catch (TaskCanceledException ex)
+        {
+            Console.WriteLine($"Task cancelled: {ex.Message}");
+            error = ex;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"HTTP error: {ex.Message}");
+            Console.WriteLine($"{ex.GetType().Name} error: {ex.Message}");
+            error = ex;
+        }
+        finally
+        {
+            if (error != null)
+            {
+                callbacks.OnCompletionError(request, error);
+            }
+            callbacks.OnCompletionEnded(request);
         }
     }
 }

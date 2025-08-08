@@ -123,42 +123,27 @@ public class ToolCall
             }
         };
     }
-
-
-    internal static ToolCall[] Parse(string toolCallsJson)
+    public static ToolCall FromJson(JToken token)
     {
-        var toolCalls = JsonConvert.DeserializeObject<JArray>(toolCallsJson);
-        if (toolCalls == null)
-            return Array.Empty<ToolCall>();
+        var type = token["type"]?.ToString();
+        if (type != "function")
+            throw new ArgumentException($"Tool call must be of type 'function', but was '{type}'");
 
-        temporary.Clear();
+        var id = token["id"]?.ToString();
+        var function = token["function"] as JObject;
+        if (function == null || id == null)
+            throw new ArgumentException("Tool call must have a function and an id");
 
-        foreach (var token in toolCalls)
-        {
-            var type = token["type"]?.ToString();
-            if (type != "function")
-                continue;
+        var name = function["name"]?.ToString();
+        var argsJson = function["arguments"]?.ToString();
+        if (name == null || argsJson == null)
+            throw new ArgumentException("Tool call must have a name and arguments");
 
-            var id = token["id"]?.ToString();
-            var function = token["function"] as JObject;
-            if (function == null || id == null)
-                continue;
+        var targetTool = Tool.Get(name); // assuming Tool.Get returns Type
+        var args = SchemaHelper.ParseFromSchema(targetTool.Schema, argsJson, targetTool.Type);
+        if (args == null)
+            throw new ArgumentException("Tool call arguments could not be parsed");
 
-            var name = function["name"]?.ToString();
-            var argsJson = function["arguments"]?.ToString();
-            if (name == null || argsJson == null)
-                continue;
-
-            var targetTool = Tool.Get(name); // assuming Tool.Get returns Type
-            var args = SchemaHelper.ParseFromSchema(targetTool.Schema, argsJson, targetTool.Type);
-            if (args == null)
-                continue;
-
-            temporary.Add(new ToolCall(args, name, id));
-        }
-
-        ToolCall[] result = temporary.ToArray();
-        temporary.Clear();
-        return result;
+        return new ToolCall(args, name, id);
     }
 }
