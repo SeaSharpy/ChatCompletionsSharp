@@ -25,7 +25,7 @@ public class CompletionRequest
         var data = new JObject
         {
             ["model"] = Model,
-            ["messages"] = new JArray(Messages.Select(m => { Console.WriteLine(m); return m.ToJson(); })),
+            ["messages"] = new JArray(Messages.Select(m => m.ToJson())),
             ["temperature"] = Temperature,
             ["max_completion_tokens"] = MaxTokens < 0 ? null : MaxTokens,
             ["n"] = 1,
