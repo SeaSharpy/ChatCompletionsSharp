@@ -39,6 +39,7 @@ public class OpenAI
                     string errorBody = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"HTTP error {(int)response.StatusCode} {response.ReasonPhrase}");
                     Console.WriteLine($"Error body: {errorBody}");
+                    Console.WriteLine($"Request body: {request.ToJson().ToString()}");
                     callbacks.OnCompletionError(request, errorBody);
                     goto EndTry;
                 }
