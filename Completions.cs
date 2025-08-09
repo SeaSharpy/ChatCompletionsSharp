@@ -11,6 +11,7 @@ public class CompletionRequest
     public string? Prediction { get; set; }
     public string? ReasoningEffort { get; set; }
     public string? Verbosity { get; set; }
+    public string? Detail { get; set; }
     public ICompletionEventCallbacks Callbacks { get; set; }
 
     public CompletionRequest(List<Message> messages, string model, ICompletionEventCallbacks callbacks)
@@ -25,7 +26,7 @@ public class CompletionRequest
         var data = new JObject
         {
             ["model"] = Model,
-            ["messages"] = new JArray(Messages.Select(m => m.ToJson())),
+            ["messages"] = new JArray(Messages.Select(m => m.ToJson(Detail))),
             ["temperature"] = Temperature,
             ["max_completion_tokens"] = MaxTokens < 0 ? null : MaxTokens,
             ["n"] = 1,

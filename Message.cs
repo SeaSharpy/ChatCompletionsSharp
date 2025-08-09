@@ -5,18 +5,20 @@ namespace ChatCompletionsSharp;
 public class Message
 {
     public required string Role { get; set; }
-    public required string Content { get; set; }
+    public string? Content { get; set; }
+    public string[]? ImageUrls { get; set; }
     public ToolCall[]? ToolCalls { get; set; }
     public string? ToolCallId { get; set; }
 
     public string? Name { get; set; }
 
-    public static Message User(string content)
+    public static Message User(string content, params string[] imageUrls)
     {
         return new Message
         {
             Role = "user",
-            Content = content
+            Content = content,
+            ImageUrls = imageUrls.Length > 0 ? imageUrls : null
         };
     }
 
@@ -64,9 +66,30 @@ public class Message
         {
             Role = json["role"]?.ToString()
                 ?? throw new ArgumentNullException("Message must have a role."),
-            Content = json["content"]?.ToString()
-                ?? throw new ArgumentNullException("Message must have a content.")
         };
+        var contentToken = json["content"];
+        if (contentToken is JArray contentArray)
+        {
+            message.Content = string.Join("", contentArray
+                .Where(t => t["type"]?.ToString() == "text")
+                .Select(t => t["text"]?.ToString()));
+
+            if (message.Role == "user")
+            {
+                var urls = contentArray
+                    .Where(t => t["type"]?.ToString() == "image_url")
+                    .Select(t => t["image_url"]?["url"]?.ToString())
+                    .Where(u => !string.IsNullOrEmpty(u))
+                    .Cast<string>()
+                    .ToArray();
+                if (urls.Length > 0)
+                    message.ImageUrls = urls;
+            }
+        }
+        else
+        {
+            message.Content = contentToken?.ToString() ?? throw new ArgumentNullException("Message must have a content.");
+        }
         if (json["tool_calls"] is JArray toolCallsArray)
         {
             message.ToolCalls = toolCallsArray
@@ -84,16 +107,42 @@ public class Message
             ? $"[{string.Join(", ", ToolCalls.Select(t => t.ToString()))}]"
             : "null";
 
-        return $"Role: {Role}, Name: {Name}, Content: {Content}, ToolCalls: {toolCallsStr}, ToolCallId: {ToolCallId}";
+        var contentStr = ImageUrls != null
+            ? $"{Content} + [{string.Join(", ", ImageUrls)}]"
+            : Content;
+
+        return $"Role: {Role}, Name: {Name}, Content: {contentStr}, ToolCalls: {toolCallsStr}, ToolCallId: {ToolCallId}";
     }
 
-    internal JObject ToJson()
+    internal JObject ToJson(string? detail = null)
     {
         var data = new JObject
         {
             ["role"] = Role,
-            ["content"] = Content
         };
+
+        if (ImageUrls != null && Role == "user")
+        {
+            var array = new JArray();
+            if (Content != null)
+                array.Add(new JObject { ["type"] = "text", ["text"] = Content });
+            foreach (var url in ImageUrls)
+            {
+                var imageObj = new JObject
+                {
+                    ["type"] = "image_url",
+                    ["image_url"] = new JObject { ["url"] = url }
+                };
+                if (detail != null)
+                    ((JObject)imageObj["image_url"]!)["detail"] = detail;
+                array.Add(imageObj);
+            }
+            data["content"] = array;
+        }
+        else
+        {
+            data["content"] = Content;
+        }
 
         if (ToolCalls != null)
             data["tool_calls"] = new JArray(ToolCalls.Select(t => t.ToJson()));
