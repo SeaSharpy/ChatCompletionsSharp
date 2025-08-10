@@ -9,6 +9,9 @@ public class Message
     public string[]? ImageUrls { get; set; }
     public ToolCall[]? ToolCalls { get; set; }
     public string? ToolCallId { get; set; }
+    public string? Meta1 { get; set; }
+    public string? Meta2 { get; set; }
+    public string? Meta3 { get; set; }
 
     public string? Name { get; set; }
 
