@@ -33,30 +33,28 @@ file static class SchemaHelper
     }
 }
 public class Tool {
-    public string Name { get; }
-    public string Description { get; }
-    public bool Strict { get; }
+    public string Name { get; internal set; }
+    public string Description { get; internal set; }
+    public bool Strict { get; internal set; }
     internal string Schema { get; private set; }
     internal JObject SchemaJson { get; private set; }
     public Type Type { get; private set; }
+    public delegate CompletionToolCallbackResponse CompletionToolCallback(CompletionRequest r, ToolCall toolCall);
 
+    public CompletionToolCallback? Callback;
     internal JObject Definition { get; private set; }
 
-    private static Dictionary<string, Tool> ToolTypes = new();
-
-    internal static JArray AllAsJson()
+    internal static JArray AllAsJson(Dictionary<string, Tool> toolTypes)
     {
-        // return a , separated string of all tool definitions
-        return new JArray(ToolTypes.Values.Select(t => t.ToJson()));
+        return new JArray(toolTypes.Values.Select(t => t.ToJson()));
     }
 
-    public Tool(string name, string description, Type type, bool strict = false)
+    internal Tool(string name, string description, Type type, bool strict = false)
     {
-        if (ToolTypes.ContainsKey(name))
-            throw new ArgumentException($"Tool with name '{name}' already exists.");
         Name = name;
         Description = description;
         Strict = strict;
+        Callback = null;
         Type = type;
         Schema = SchemaHelper.GenerateSchema(type);
         SchemaJson = JObject.Parse(Schema);
@@ -71,7 +69,90 @@ public class Tool {
                 ["strict"] = strict
             }
         };
-        ToolTypes.Add(name, this);
+    }
+    internal Tool(string name, string description, Type type, CompletionToolCallback? callback = null)
+    {
+        Name = name;
+        Description = description;
+        Strict = false;
+        Callback = callback;
+        Type = type;
+        Schema = SchemaHelper.GenerateSchema(type);
+        SchemaJson = JObject.Parse(Schema);
+        Definition = new JObject
+        {
+            ["type"] = "function",
+            ["function"] = new JObject
+            {
+                ["name"] = name,
+                ["description"] = description,
+                ["parameters"] = JObject.Parse(Schema),
+                ["strict"] = false
+            }
+        };
+    }
+    internal Tool(string name, string description, Type type, CompletionToolCallback? callback = null, bool strict = false)
+    {
+        Name = name;
+        Description = description;
+        Strict = strict;
+        Callback = callback;
+        Type = type;
+        Schema = SchemaHelper.GenerateSchema(type);
+        SchemaJson = JObject.Parse(Schema);
+        Definition = new JObject
+        {
+            ["type"] = "function",
+            ["function"] = new JObject
+            {
+                ["name"] = name,
+                ["description"] = description,
+                ["parameters"] = JObject.Parse(Schema),
+                ["strict"] = strict
+            }
+        };
+    }
+    internal Tool(string name, string description, Type type, bool strict = false, CompletionToolCallback? callback = null)
+    {
+        Name = name;
+        Description = description;
+        Strict = strict;
+        Callback = callback;
+        Type = type;
+        Schema = SchemaHelper.GenerateSchema(type);
+        SchemaJson = JObject.Parse(Schema);
+        Definition = new JObject
+        {
+            ["type"] = "function",
+            ["function"] = new JObject
+            {
+                ["name"] = name,
+                ["description"] = description,
+                ["parameters"] = JObject.Parse(Schema),
+                ["strict"] = strict
+            }
+        };
+    }
+    internal Tool(string name, string description, Type type)
+    {
+        Name = name;
+        Description = description;
+        Strict = false;
+        Callback = null;
+        Type = type;
+        Schema = SchemaHelper.GenerateSchema(type);
+        SchemaJson = JObject.Parse(Schema);
+        Definition = new JObject
+        {
+            ["type"] = "function",
+            ["function"] = new JObject
+            {
+                ["name"] = name,
+                ["description"] = description,
+                ["parameters"] = JObject.Parse(Schema),
+                ["strict"] = false
+            }
+        };
     }
 
     internal JObject ToJson()
@@ -88,11 +169,6 @@ public class Tool {
             }
         };
     }
-
-    internal static Tool Get(string name)
-    {
-        return ToolTypes.TryGetValue(name, out var type) ? type : throw new KeyNotFoundException($"Tool with name '{name}' not found.");
-    }
 }
 
 public class ToolCall
@@ -100,12 +176,14 @@ public class ToolCall
     public object Arguments;
     public string Name;
     public string Id;
+    public Tool Tool;
 
-    public ToolCall(object arguments, string name, string id)
+    public ToolCall(object arguments, string name, string id, Tool tool)
     {
         Name = name;
         Arguments = arguments;
         Id = id;
+        Tool = tool;
     }
 
     internal static List<ToolCall> temporary = new();
@@ -123,7 +201,7 @@ public class ToolCall
             }
         };
     }
-    public static ToolCall FromJson(JToken token)
+    public static ToolCall FromJson(Dictionary<string, Tool> toolTypes, JToken token)
     {
         var type = token["type"]?.ToString();
         if (type != "function")
@@ -139,11 +217,11 @@ public class ToolCall
         if (name == null || argsJson == null)
             throw new ArgumentException("Tool call must have a name and arguments");
 
-        var targetTool = Tool.Get(name); // assuming Tool.Get returns Type
+        var targetTool = toolTypes.TryGetValue(name, out var tool) ? tool : throw new ArgumentException($"Tool with name '{name}' not found");
         var args = SchemaHelper.ParseFromSchema(targetTool.Schema, argsJson, targetTool.Type);
         if (args == null)
             throw new ArgumentException("Tool call arguments could not be parsed");
 
-        return new ToolCall(args, name, id);
+        return new ToolCall(args, name, id, targetTool);
     }
 }

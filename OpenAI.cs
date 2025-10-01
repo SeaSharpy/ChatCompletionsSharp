@@ -6,14 +6,17 @@ namespace ChatCompletionsSharp;
 
 public class OpenAI
 {
-    public string ApiKey { get; set; }
-    public string BaseUrl { get; set; } = "https://api.openai.com/v1/chat/completions";
+    private string ApiKey;
+    public string BaseUrl = "https://api.openai.com/v1/chat/completions";
+    private Dictionary<string, Tool> ToolTypes = new();
 
     public OpenAI(string? apiKey = null)
     {
         ApiKey = apiKey ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? throw new ArgumentNullException("OpenAI API key not found.");
+        client.DefaultRequestHeaders.Add("Authorization", "Bearer " + ApiKey);
     }
 
+    private HttpClient client = new();
     public async Task SendCompletion(CompletionRequest request)
     {
         ICompletionEventCallbacks callbacks = request.Callbacks;
@@ -21,16 +24,12 @@ public class OpenAI
         List<Message> extraMessages = new();
         try
         {
-            using var client = new HttpClient();
-
-            client.DefaultRequestHeaders.Add("Authorization", "Bearer " + ApiKey);
 
             callbacks.OnCompletionStarted(request);
 
             while (true)
             {
-
-                var content = new StringContent(request.ToJson().ToString(), Encoding.UTF8, "application/json");
+                var content = new StringContent(request.ToJson(ToolTypes).ToString(), Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync(BaseUrl, content);
 
@@ -39,7 +38,7 @@ public class OpenAI
                     string errorBody = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"HTTP error {(int)response.StatusCode} {response.ReasonPhrase}");
                     Console.WriteLine($"Error body: {errorBody}");
-                    Console.WriteLine($"Request body: {request.ToJson().ToString()}");
+                    Console.WriteLine($"Request body: {request.ToJson(ToolTypes).ToString()}");
                     callbacks.OnCompletionError(request, errorBody);
                     goto EndTry;
                 }
@@ -60,7 +59,7 @@ public class OpenAI
                     callbacks.OnCompletionError(request, "No message found in response");
                     goto EndTry;
                 }
-                Message message = Message.FromJson(messageToken);
+                Message message = Message.FromJson(ToolTypes, messageToken);
                 callbacks.OnCompletionDelta(request, message);
                 request.Messages.Add(message);
                 extraMessages.Add(message);
@@ -68,9 +67,31 @@ public class OpenAI
                 {
                     foreach (ToolCall toolCall in message.ToolCalls)
                     {
-                        Message toolResponse = callbacks.OnTool(request, toolCall);
-                        request.Messages.Add(toolResponse);
-                        extraMessages.Add(toolResponse);
+                        CompletionToolResponse toolResponse = callbacks.OnTool(request, toolCall);
+                        switch (toolResponse.Type)
+                        {
+                            case CompletionToolResponseType.AskTool:
+                                if (toolCall.Tool.Callback != null)
+                                {
+                                    CompletionToolCallbackResponse callbackResponse = toolCall.Tool.Callback(request, toolCall);
+                                    switch (callbackResponse.Type)
+                                    {
+                                        case CompletionToolCallbackResponseType.Stop:
+                                            goto EndTry;
+                                        case CompletionToolCallbackResponseType.Message:
+                                            request.Messages.Add(callbackResponse.ToolResponse!);
+                                            extraMessages.Add(callbackResponse.ToolResponse!);
+                                            break;
+                                    }
+                                }
+                                break;
+                            case CompletionToolResponseType.Stop:
+                                goto EndTry;
+                            case CompletionToolResponseType.Message:
+                                request.Messages.Add(toolResponse.ToolResponse!);
+                                extraMessages.Add(toolResponse.ToolResponse!);
+                                break;
+                        }
                     }
                 }
                 else break;
@@ -111,5 +132,19 @@ public class OpenAI
             }
             callbacks.OnCompletionEnded(request, extraMessages);
         }
+    }
+
+    public void AddTool(string name, string description, Type type, bool strict = false)
+    {
+        if (ToolTypes.ContainsKey(name))
+            throw new ArgumentException($"Tool with name '{name}' already exists.");
+        ToolTypes.Add(name, new Tool(name, description, type, strict));
+    }
+
+    public void AddTool(Tool tool)
+    {
+        if (ToolTypes.ContainsKey(tool.Name))
+            throw new ArgumentException($"Tool with name '{tool.Name}' already exists.");
+        ToolTypes.Add(tool.Name, tool);
     }
 }

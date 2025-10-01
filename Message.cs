@@ -63,7 +63,7 @@ public class Message
         };
     }
 
-    public static Message FromJson(JToken json)
+    public static Message FromJson(Dictionary<string, Tool> toolTypes, JToken json)
     {
         var message = new Message
         {
@@ -96,7 +96,7 @@ public class Message
         if (json["tool_calls"] is JArray toolCallsArray)
         {
             message.ToolCalls = toolCallsArray
-                .Select(t => ToolCall.FromJson(t))
+                .Select(t => ToolCall.FromJson(toolTypes, t))
                 .ToArray();
         }
         message.ToolCallId = json["tool_call_id"]?.ToString();
