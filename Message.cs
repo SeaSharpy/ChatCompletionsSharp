@@ -4,16 +4,17 @@ namespace ChatCompletionsSharp;
 
 public class Message
 {
-    public required string Role { get; set; }
-    public string? Content { get; set; }
-    public string[]? ImageUrls { get; set; }
-    public ToolCall[]? ToolCalls { get; set; }
-    public string? ToolCallId { get; set; }
-    public string? Meta1 { get; set; }
-    public string? Meta2 { get; set; }
-    public string? Meta3 { get; set; }
+    public required string Role;
+    public string? Content;
+    public string[]? ImageUrls;
+    public ToolCall[]? ToolCalls;
+    public string? ToolCallId;
+    public string? Meta1;
+    public string? Meta2;
+    public string? Meta3;
 
-    public string? Name { get; set; }
+    public string? Name;
+    internal Message() { }
 
     public static Message User(string content, params string[] imageUrls)
     {

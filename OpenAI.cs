@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace ChatCompletionsSharp;
@@ -134,11 +133,11 @@ public class OpenAI
         }
     }
 
-    public void AddTool(string name, string description, Type type, bool strict = false)
+    public void AddTool(string name, string description, Type type)
     {
         if (ToolTypes.ContainsKey(name))
             throw new ArgumentException($"Tool with name '{name}' already exists.");
-        ToolTypes.Add(name, new Tool(name, description, type, strict));
+        ToolTypes.Add(name, new Tool(name, description, type));
     }
 
     public void AddTool(Tool tool)

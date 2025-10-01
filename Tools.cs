@@ -48,8 +48,29 @@ public class Tool {
     {
         return new JArray(toolTypes.Values.Select(t => t.ToJson()));
     }
+    public Tool(string name, string description, Type type)
+    {
+        Name = name;
+        Description = description;
+        Strict = false;
+        Callback = null;
+        Type = type;
+        Schema = SchemaHelper.GenerateSchema(type);
+        SchemaJson = JObject.Parse(Schema);
+        Definition = new JObject
+        {
+            ["type"] = "function",
+            ["function"] = new JObject
+            {
+                ["name"] = name,
+                ["description"] = description,
+                ["parameters"] = JObject.Parse(Schema),
+                ["strict"] = false
+            }
+        };
+    }
 
-    internal Tool(string name, string description, Type type, bool strict = false)
+    public Tool(string name, string description, Type type, bool strict = false)
     {
         Name = name;
         Description = description;
@@ -70,7 +91,7 @@ public class Tool {
             }
         };
     }
-    internal Tool(string name, string description, Type type, CompletionToolCallback? callback = null)
+    public Tool(string name, string description, Type type, CompletionToolCallback? callback = null)
     {
         Name = name;
         Description = description;
@@ -91,7 +112,7 @@ public class Tool {
             }
         };
     }
-    internal Tool(string name, string description, Type type, CompletionToolCallback? callback = null, bool strict = false)
+    public Tool(string name, string description, Type type, CompletionToolCallback? callback = null, bool strict = false)
     {
         Name = name;
         Description = description;
@@ -112,7 +133,7 @@ public class Tool {
             }
         };
     }
-    internal Tool(string name, string description, Type type, bool strict = false, CompletionToolCallback? callback = null)
+    public Tool(string name, string description, Type type, bool strict = false, CompletionToolCallback? callback = null)
     {
         Name = name;
         Description = description;
@@ -130,27 +151,6 @@ public class Tool {
                 ["description"] = description,
                 ["parameters"] = JObject.Parse(Schema),
                 ["strict"] = strict
-            }
-        };
-    }
-    internal Tool(string name, string description, Type type)
-    {
-        Name = name;
-        Description = description;
-        Strict = false;
-        Callback = null;
-        Type = type;
-        Schema = SchemaHelper.GenerateSchema(type);
-        SchemaJson = JObject.Parse(Schema);
-        Definition = new JObject
-        {
-            ["type"] = "function",
-            ["function"] = new JObject
-            {
-                ["name"] = name,
-                ["description"] = description,
-                ["parameters"] = JObject.Parse(Schema),
-                ["strict"] = false
             }
         };
     }
@@ -185,8 +185,6 @@ public class ToolCall
         Id = id;
         Tool = tool;
     }
-
-    internal static List<ToolCall> temporary = new();
 
     internal JObject ToJson()
     {

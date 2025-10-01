@@ -1,11 +1,10 @@
-using System.Diagnostics;
 using Newtonsoft.Json.Linq;
 
 namespace ChatCompletionsSharp;
 
 public class CompletionRequest
 {
-    public List<Message> Messages = new();
+    public List<Message> Messages { get; private set; } = new();
     public string Model;
     public float Temperature = 1.0f;
     public int MaxTokens = -1;
@@ -107,7 +106,7 @@ public class CompletionToolCallbackResponse
 public interface ICompletionEventCallbacks
 {
     void OnCompletionStarted(CompletionRequest r);
-    CompletionToolResponse OnTool(CompletionRequest r, ToolCall toolCall); // bool to say whether to use the default
+    CompletionToolResponse OnTool(CompletionRequest r, ToolCall toolCall);
     void OnCompletionDelta(CompletionRequest r, Message delta);
     void OnCompletionEnded(CompletionRequest r, List<Message> newMessages);
     void OnCompletionError(CompletionRequest r, Exception e);
