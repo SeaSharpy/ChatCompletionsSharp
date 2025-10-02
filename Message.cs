@@ -66,12 +66,12 @@ public class Message
 
     public static Message FromJson(Dictionary<string, Tool> toolTypes, JToken json)
     {
-        var message = new Message
+        Message message = new Message
         {
             Role = json["role"]?.ToString()
                 ?? throw new ArgumentNullException("Message must have a role."),
         };
-        var contentToken = json["content"];
+        JToken contentToken = json["content"] ?? throw new ArgumentNullException("Message must have a content.");
         if (contentToken is JArray contentArray)
         {
             message.Content = string.Join("", contentArray
@@ -80,7 +80,7 @@ public class Message
 
             if (message.Role == "user")
             {
-                var urls = contentArray
+                string[] urls = contentArray
                     .Where(t => t["type"]?.ToString() == "image_url")
                     .Select(t => t["image_url"]?["url"]?.ToString())
                     .Where(u => !string.IsNullOrEmpty(u))
@@ -92,7 +92,7 @@ public class Message
         }
         else
         {
-            message.Content = contentToken?.ToString() ?? throw new ArgumentNullException("Message must have a content.");
+            message.Content = contentToken.ToString();
         }
         if (json["tool_calls"] is JArray toolCallsArray)
         {
@@ -107,32 +107,32 @@ public class Message
 
     public override string ToString()
     {
-        var toolCallsStr = ToolCalls != null
+        string toolCallsStr = ToolCalls != null
             ? $"[{string.Join(", ", ToolCalls.Select(t => t.ToString()))}]"
             : "null";
 
-        var contentStr = ImageUrls != null
+        string contentStr = ImageUrls != null
             ? $"{Content} + [{string.Join(", ", ImageUrls)}]"
-            : Content;
+            : (Content ?? "null");
 
         return $"Role: {Role}, Name: {Name}, Content: {contentStr}, ToolCalls: {toolCallsStr}, ToolCallId: {ToolCallId}";
     }
 
     internal JObject ToJson(string? detail = null)
     {
-        var data = new JObject
+        JObject data = new JObject
         {
             ["role"] = Role,
         };
 
         if (ImageUrls != null && Role == "user")
         {
-            var array = new JArray();
+            JArray array = new JArray();
             if (Content != null)
                 array.Add(new JObject { ["type"] = "text", ["text"] = Content });
-            foreach (var url in ImageUrls)
+            foreach (string url in ImageUrls)
             {
-                var imageObj = new JObject
+                JObject imageObj = new JObject
                 {
                     ["type"] = "image_url",
                     ["image_url"] = new JObject { ["url"] = url }

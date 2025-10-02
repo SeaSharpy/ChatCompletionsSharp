@@ -23,7 +23,7 @@ public class CompletionRequest
 
     internal JObject ToJson(Dictionary<string, Tool> toolTypes)
     {
-        var data = new JObject
+        JObject data = new JObject
         {
             ["model"] = Model,
             ["messages"] = new JArray(Messages.Select(m => m.ToJson(Detail))),
@@ -109,6 +109,7 @@ public interface ICompletionEventCallbacks
     CompletionToolResponse OnTool(CompletionRequest r, ToolCall toolCall);
     void OnCompletionDelta(CompletionRequest r, Message delta);
     void OnCompletionEnded(CompletionRequest r, List<Message> newMessages);
+    void OnCompletionSuccess(CompletionRequest r);
     void OnCompletionError(CompletionRequest r, Exception e);
     void OnCompletionError(CompletionRequest r, string e);
 }

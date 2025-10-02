@@ -173,12 +173,12 @@ public class Tool {
 
 public class ToolCall
 {
-    public object Arguments;
+    public object? Arguments;
     public string Name;
     public string Id;
     public Tool Tool;
 
-    public ToolCall(object arguments, string name, string id, Tool tool)
+    public ToolCall(object? arguments, string name, string id, Tool tool)
     {
         Name = name;
         Arguments = arguments;
@@ -195,30 +195,25 @@ public class ToolCall
             ["function"] = new JObject
             {
                 ["name"] = Name,
-                ["arguments"] = JObject.FromObject(Arguments).ToString()
+                ["arguments"] = Arguments != null ? JObject.FromObject(Arguments).ToString() : new JObject()
             }
         };
     }
     public static ToolCall FromJson(Dictionary<string, Tool> toolTypes, JToken token)
     {
-        var type = token["type"]?.ToString();
+        string type = token["type"]?.ToString() ?? throw new ArgumentException("Tool call must have a type");
         if (type != "function")
             throw new ArgumentException($"Tool call must be of type 'function', but was '{type}'");
 
-        var id = token["id"]?.ToString();
-        var function = token["function"] as JObject;
-        if (function == null || id == null)
-            throw new ArgumentException("Tool call must have a function and an id");
+        string id = token["id"]?.ToString() ?? throw new ArgumentException("Tool call must have an id");
+ 
+        JObject function = token["function"] as JObject ?? throw new ArgumentException("Tool call must have a function");
 
-        var name = function["name"]?.ToString();
-        var argsJson = function["arguments"]?.ToString();
-        if (name == null || argsJson == null)
-            throw new ArgumentException("Tool call must have a name and arguments");
-
-        var targetTool = toolTypes.TryGetValue(name, out var tool) ? tool : throw new ArgumentException($"Tool with name '{name}' not found");
-        var args = SchemaHelper.ParseFromSchema(targetTool.Schema, argsJson, targetTool.Type);
-        if (args == null)
-            throw new ArgumentException("Tool call arguments could not be parsed");
+        string name = function["name"]?.ToString() ?? throw new ArgumentException("Tool call must have a name");
+        string argsJson = function["arguments"]?.ToString() ?? throw new ArgumentException("Tool call must have arguments");
+        
+        Tool targetTool = toolTypes.TryGetValue(name, out var tool) ? tool : throw new ArgumentException($"Tool with name '{name}' not found");
+        object? args = SchemaHelper.ParseFromSchema(targetTool.Schema, argsJson, targetTool.Type);
 
         return new ToolCall(args, name, id, targetTool);
     }
