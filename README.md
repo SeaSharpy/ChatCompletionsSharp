@@ -18,8 +18,6 @@ A lightweight .NET 8 client for OpenAI chat completions with a focus on typed to
 dotnet add package ChatCompletionsSharp
 ```
 
-> The package metadata is included in `ChatCompletionsSharp.csproj`. If the package is not published yet, reference the project directly in your solution or add it as a git submodule.
-
 Set your OpenAI key via the constructor or by exporting `OPENAI_API_KEY`:
 
 ```powershell

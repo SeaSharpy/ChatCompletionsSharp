@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>ChatCompletionsSharp</PackageId>
-    <Version>1.0.2</Version>
+    <Version>1.0.4</Version>
     <Authors>SeaSharpy</Authors>
     <Description>A stylish alternative to the official OpenAI sdk.</Description>
     <PackageTags>utility library openai ai api</PackageTags>
