@@ -1,5 +1,7 @@
 # ChatCompletionsSharp
 
+https://github.com/SeaSharpy/ChatCompletionsSharp
+
 A lightweight .NET 8 client for OpenAI chat completions with a focus on typed tool calls and event-driven workflows.
 
 ## Features
