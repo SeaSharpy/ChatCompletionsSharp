@@ -1,22 +1,51 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Text;
 using Newtonsoft.Json.Linq;
 
 namespace ChatCompletionsSharp;
 
+/// <summary>
+/// Provides a thin wrapper around the OpenAI Chat Completions endpoint, including tool registration and request orchestration.
+/// </summary>
 public class OpenAI
 {
+    /// <summary>
+    /// API key used to authenticate against the OpenAI service.
+    /// </summary>
     private string ApiKey;
+
+    /// <summary>
+    /// Base URL of the chat completions endpoint. Can be overridden for Azure OpenAI or custom gateways.
+    /// </summary>
     public string BaseUrl = "https://api.openai.com/v1/chat/completions";
+
+    /// <summary>
+    /// Registry of tool names to tool metadata for lookup during tool call execution.
+    /// </summary>
     private Dictionary<string, Tool> ToolTypes = new();
 
+    /// <summary>
+    /// Creates a new OpenAI client, resolving the API key from the provided argument or the OPENAI_API_KEY environment variable.
+    /// </summary>
+    /// <param name="apiKey">API key value to use when authenticating; if null, the environment variable is used instead.</param>
+    /// <exception cref="ArgumentNullException">Thrown when no API key is provided or discoverable via environment variable.</exception>
     public OpenAI(string? apiKey = null)
     {
         ApiKey = apiKey ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? throw new ArgumentNullException("OpenAI API key not found.");
         client.DefaultRequestHeaders.Add("Authorization", "Bearer " + ApiKey);
     }
 
+    /// <summary>
+    /// HTTP client instance responsible for issuing requests to the OpenAI service.
+    /// </summary>
     private HttpClient client = new();
+
+    /// <summary>
+    /// Executes a chat completion request, invoking callbacks and handling tool calls until the model stops or callbacks signal termination.
+    /// </summary>
+    /// <param name="request">The request payload and callback bundle to process.</param>
+    /// <param name="cancellationToken">Optional token used to cancel the operation between network calls and callback invocations.</param>
+    /// <returns>A task that completes when the completion finishes or is cancelled.</returns>
     public async Task SendCompletion(CompletionRequest request, CancellationToken? cancellationToken = null)
     {
         void CancellationTokenCheck()
@@ -154,6 +183,13 @@ public class OpenAI
         }
     }
 
+    /// <summary>
+    /// Registers a tool definition by name based on the provided CLR type. Throws if the tool name already exists.
+    /// </summary>
+    /// <param name="name">Unique identifier for the tool that the model will reference.</param>
+    /// <param name="description">Description shown to the model when choosing tools.</param>
+    /// <param name="type">CLR type used to generate a JSON schema for the tool arguments.</param>
+    /// <exception cref="ArgumentException">Thrown when a tool with the specified name already exists.</exception>
     public void AddTool(string name, string description, Type type)
     {
         if (ToolTypes.ContainsKey(name))
@@ -161,6 +197,11 @@ public class OpenAI
         ToolTypes.Add(name, new Tool(name, description, type));
     }
 
+    /// <summary>
+    /// Registers a fully constructed tool instance. Throws if a tool with the same name already exists.
+    /// </summary>
+    /// <param name="tool">Tool instance containing metadata, schema, and optional callback.</param>
+    /// <exception cref="ArgumentException">Thrown when a tool with the specified name already exists.</exception>
     public void AddTool(Tool tool)
     {
         if (ToolTypes.ContainsKey(tool.Name))
