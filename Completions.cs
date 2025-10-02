@@ -50,7 +50,7 @@ public class CompletionRequest
     /// <summary>
     /// Completion lifecycle callbacks that are invoked during request processing.
     /// </summary>
-    public ICompletionEventCallbacks Callbacks;
+    public ICompletionEventCallbacks Callbacks { get; private set; }
 
     /// <summary>
     /// Initializes a new request with the provided transcript, model name, and callback implementation.

@@ -167,7 +167,7 @@ This section documents all publicly accessible types, fields, properties, and me
 - **Fields**:
   - `string BaseUrl` — Endpoint used for `POST` requests (default `https://api.openai.com/v1/chat/completions`). Update this to target Azure OpenAI or custom gateways.
 - **Methods**:
-  - `Task SendCompletion(CompletionRequest request, CancellationToken? cancellationToken = null)` — Executes the request, drives callbacks, deserializes tool calls, and appends all new messages to the request.
+  - `async Task SendCompletion(CompletionRequest request, CancellationToken? cancellationToken = null)` — Executes the request, drives callbacks, deserializes tool calls, and appends all new messages to the request.
   - `void AddTool(string name, string description, Type type)` — Registers a tool by CLR type with optional callback to be attached later.
   - `void AddTool(Tool tool)` — Registers a pre-constructed `Tool` instance.
 
@@ -176,6 +176,7 @@ This section documents all publicly accessible types, fields, properties, and me
 - **Purpose**: Represents an outbound completion request along with configuration flags and callbacks.
 - **Constructor**: `CompletionRequest(List<Message> messages, string model, ICompletionEventCallbacks callbacks)` — Requires the initial message list, OpenAI model name, and callbacks implementation.
 - **Members**:
+
   - `List<Message> Messages` (get) — Mutable transcript sent with the request; responses are appended here.
   - `string Model` — Target model deployment name (e.g., `gpt-4.1-mini`).
   - `float Temperature` — Sampling temperature (`1.0f` default). Set to `0` for deterministic runs.
@@ -184,9 +185,7 @@ This section documents all publicly accessible types, fields, properties, and me
   - `string? ReasoningEffort` — Controls reasoning budget (`"medium"`, etc.).
   - `string? Verbosity` — Request verbosity level from the OpenAI API.
   - `string? Detail` — Optional image detail preference propagated to user message image URLs.
-  - `ICompletionEventCallbacks Callbacks` — Callback implementation invoked throughout the lifecycle.
-- **Internal helpers**:
-  - `JObject ToJson(Dictionary<string, Tool> toolTypes)` — Builds the request payload and attaches tool definitions.
+  - `ICompletionEventCallbacks Callbacks` (get) — Callback implementation invoked throughout the lifecycle.
 
 ### ICompletionEventCallbacks
 
@@ -224,33 +223,28 @@ This section documents all publicly accessible types, fields, properties, and me
 - **Delegates**:
   - `Tool.CompletionToolCallback` — Signature `CompletionToolCallbackResponse CompletionToolCallback(CompletionRequest r, ToolCall toolCall)` used for handling tool requests.
 - **Fields and properties**:
-  - `string Name` — Tool name used in the schema and tool calls.
-  - `string Description` — Text shown to the model when choosing tools.
-  - `bool Strict` — When true, the request enforces strict argument adherence (requires compatible API support).
-  - `Type Type` — CLR type used to generate the JSON schema and deserialize arguments.
-  - `CompletionToolCallback? Callback` — Optional delegate executed when tool calls are approved.
-- **Key behaviors**:
-  - `internal JObject Definition` — Function definition sent to the API.
-  - `internal JObject ToJson()` — Serializes the tool definition for the request.
-  - `internal static JArray AllAsJson(Dictionary<string, Tool> toolTypes)` — Aggregates all tools for payload construction.
+  - `string Name` (get) — Tool name used in the schema and tool calls.
+  - `string Description` (get) — Text shown to the model when choosing tools.
+  - `bool Strict` (get) — When true, the request enforces strict argument adherence (requires compatible API support).
+  - `Type Type` (get) — CLR type used to generate the JSON schema and deserialize arguments.
+  - `CompletionToolCallback? Callback` (get) — Optional delegate executed when requested.
 
 ### ToolCall
 
 - **Purpose**: Represents a single tool call emitted by the assistant.
 - **Constructor**: `ToolCall(object? arguments, string name, string id, Tool tool)` — Stores the raw arguments object, tool metadata, and call identifier.
 - **Fields**:
+
   - `object? Arguments` — Deserialized arguments that match the tool schema (or null if validation failed).
   - `string Name` — Function name requested by the model.
   - `string Id` — Unique identifier for the tool call.
   - `Tool Tool` — Registered tool definition that supplied the schema and callback.
-- **Methods**:
-  - `internal JObject ToJson()` — Serializes the tool call into the OpenAI-compatible format.
-  - `static ToolCall FromJson(Dictionary<string, Tool> toolTypes, JToken token)` — Parses a tool call response, performs schema validation, and materializes the arguments.
 
 ### Message
 
 - **Purpose**: Models chat transcript entries, including system/developer prompts, user messages with images, tool responses, and assistant output.
 - **Factories**:
+
   - `static Message User(string content, params string[] imageUrls)` — Creates a user message with optional images captured as URLs.
   - `static Message Assistant(string content, ToolCall[]? toolCalls = null)` — Creates an assistant message with optional tool call stubs.
   - `static Message System(string content)` — Helper for system prompts.
@@ -258,18 +252,15 @@ This section documents all publicly accessible types, fields, properties, and me
   - `static Message Tool(string content, ToolCall call)` — Builds a tool response referencing the originating call.
   - `static Message Tool(string content, string id)` — Tool response factory when only the call ID is available.
 - **Fields**:
+
   - `required string Role` — Role of the message (`user`, `assistant`, `system`, `developer`, `tool`).
   - `string? Content` — Textual content of the message.
   - `string[]? ImageUrls` — Optional image URLs attached to user messages.
   - `ToolCall[]? ToolCalls` — Tool call descriptors emitted by the assistant.
   - `string? ToolCallId` — Identifier linking tool responses to the originating call.
-  - `string? Meta1`, `string? Meta2`, `string? Meta3` — Reserved metadata channels for advanced integrations.
-  - `string? Name` — Optional display name for the message.
-- **Methods**:
-  - `static Message FromJson(Dictionary<string, Tool> toolTypes, JToken json)` — Deserializes an OpenAI chat completion message.
-  - `override string ToString()` — Returns a readable representation for debugging.
-  - `internal JObject ToJson(string? detail = null)` — Serializes the message into the OpenAI payload format.
+  - `string? Meta1`, `string? Meta2`, `string? Meta3` — Metadata slots for whatever you want.
+  - `string? Name` — Optional name for the message to differentiate participants.
 
 ## Contributing
 
-Issues and pull requests are welcome. If you extend the surface area of the client, consider updating this documentation and adding examples so consumers can discover the new functionality quickly.
+Issues and pull requests are welcome.
