@@ -7,10 +7,10 @@ A lightweight .NET 8 client for OpenAI chat completions with a focus on typed to
 ## Features
 
 - Event callbacks for every stage of the chat completion lifecycle
-- Strongly-typed tool definitions with JSON Schema generated from your CLR types
-- Helper factories for user, assistant, developer, and tool messages (including image URLs)
+- Strongly-typed tool definitions with JSON Schema generated from your structs
+- Helper factories for user, assistant, developer, and tool messages (including images)
 - Simple cancellation support and rich error reporting hooks
-- Minimal dependencies: HttpClient plus Newtonsoft.Json and NJsonSchema
+- Minimal dependencies: Newtonsoft.Json and NJsonSchema
 
 ## Installation
 
@@ -80,7 +80,7 @@ class ConsoleCallbacks : ICompletionEventCallbacks
 
 ## Defining and handling tools
 
-Tools are registered on the `OpenAI` client. The library builds the JSON schema from your CLR type and deserializes arguments before invoking your callback.
+Tools are registered on the `OpenAI` client. The library builds the JSON schema from your struct and deserializes arguments before invoking your callback.
 
 ```csharp
 struct WeatherArgs {
@@ -114,9 +114,9 @@ Return `CompletionToolResponse.Stop()` (or `CompletionToolCallbackResponse.Stop(
 
 ## Message helpers
 
-- `Message.User(string content, params string[] imageUrls)` for text-only or image-enhanced user messages. When image URLs are present, they are serialized with the optional `CompletionRequest.Detail` setting.
-- `Message.Assistant(string content, ToolCall[]? toolCalls = null)` to capture assistant replies or to inject tool call stubs in tests.
-- `Message.Developer(string content)` to supply system-like instructions.
+- `Message.User(string content, params string[] imageUrls)` for text and images in user messages.
+- `Message.Assistant(string content, ToolCall[]? toolCalls = null)` to inject tool call stubs in tests.
+- `Message.Developer(string content)` to supply system instructions (you can also do Message.System if you're using the older models).
 - `Message.Tool(string content, ToolCall call)` or `Message.Tool(string content, string id)` to send tool outputs back to the assistant.
 
 You cannot instantiate like `new Message { Role = "...", Content = "..." }`.
@@ -127,9 +127,7 @@ You cannot instantiate like `new Message { Role = "...", Content = "..." }`.
 
 - `Temperature` and `MaxTokens` for sampling control.
 - `Prediction`, `ReasoningEffort`, and `Verbosity` for reasoning features.
-- `Detail` to toggle image detail levels (`"auto"`, `"low"`, `"high"`). When set, every user image uses the same setting.
-
-All non-null values are forwarded verbatim in the request payload.
+- `Detail` to toggle image detail levels (`"auto"`, `"low"`, `"high"`).
 
 ## Cancellation and error handling
 
@@ -149,10 +147,6 @@ var client = new OpenAI(apiKey: "azure-key")
 ```
 
 The current client does not include automatic retries; wrap `SendCompletion` in your own policy (Polly, etc.) if you need them.
-
-## Working with tests
-
-Because callbacks are interfaces, you can stub `ICompletionEventCallbacks` in tests to assert on the emitted messages. Tools can also be added without callbacks, letting `OnTool` return `CompletionToolResponse.Message` directly with crafted responses.
 
 ## API Reference
 
